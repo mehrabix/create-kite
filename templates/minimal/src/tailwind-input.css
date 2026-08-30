@@ -1,0 +1,10 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* Scan Liquid files for utility classes */
+@source "../layout";
+@source "../sections";
+@source "../snippets";
+@source "../blocks";
+@source "../templates";

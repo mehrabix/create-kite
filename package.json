@@ -1,0 +1,33 @@
+{
+  "name": "create-kite",
+  "version": "0.1.0",
+  "description": "Interactive CLI that scaffolds a complete Shopify Liquid theme workspace with Tailwind CSS v4, LiqKit components, and every tool you pick.",
+  "type": "module",
+  "bin": {
+    "create-kite": "./create.js"
+  },
+  "files": [
+    "create.js",
+    "templates"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "node --check create.js"
+  },
+  "keywords": [
+    "shopify",
+    "liquid",
+    "tailwind",
+    "theme",
+    "scaffold",
+    "cli",
+    "create-kite"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  }
+}

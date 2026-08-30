@@ -1,0 +1,10 @@
+{% comment %}
+  LiqKit: button component snippet.
+  Usage: {% render 'liqkit-button', text: 'Shop now', url: '/collections/all' %}
+{% endcomment %}
+<a
+  href="{{ url | default: '#' }}"
+  class="inline-flex items-center justify-center rounded-md bg-[#202223] px-4 py-2 text-sm font-medium text-white no-underline transition hover:bg-[#3a3c3d]"
+>
+  {{ text | default: 'Button' }}
+</a>

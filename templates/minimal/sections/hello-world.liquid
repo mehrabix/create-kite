@@ -1,0 +1,72 @@
+{% comment %}
+  Welcome to Shopify theme development!
+{% endcomment %}
+
+<div class="welcome full-width grid grid-cols-[var(--content-grid)] bg-[#f6f6f7] py-[72px]">
+  <div class="col-start-2 flex w-full items-center justify-between gap-4 px-6">
+    <div>
+      <h1 class="text-3xl font-bold">Hello, World!</h1>
+
+      <p class="mt-6 max-w-[80ch] leading-[1.4]">
+        The Skeleton theme is a minimal, carefully structured Shopify theme designed to help you quickly get started.
+        Designed with modularity, maintainability, and Shopify's best practices in mind.
+      </p>
+
+      <p class="mt-6 max-w-[80ch] leading-[1.4]">
+        Themes shape the online store experience for merchants and their customers. Build fast, flexible themes at scale
+        using Liquid, Shopify's theme templating language, along with HTML, CSS, JavaScript, and JSON.
+      </p>
+    </div>
+    <div class="w-[300px]">
+      <img src="{{ 'shoppy-x-ray.svg' | asset_url }}" width="300" height="300">
+    </div>
+  </div>
+</div>
+
+<div class="mt-[50px] grid grid-cols-3 gap-8 max-[1100px]:grid-cols-1">
+  <div class="flex h-full flex-col space-y-4 rounded-lg bg-[#eef3ff] p-6 leading-[1.4] text-[#5c5f62]">
+    <h3 class="text-base font-bold text-[#202223]">Key Concepts</h3>
+    <p class="flex-1">
+      Shopify themes are a package of template files, building blocks, and supporting assets. Use these building blocks
+      to create modular, customizable themes.
+    </p>
+    <p>
+      {{ 'Learn more about key concepts' | link_to: 'https://shopify.dev/docs/storefronts/themes/architecture', class: 'flex w-fit rounded border border-[#8c9196] bg-[#fafbfb] px-[10px] pb-[5px] pt-[3px] text-[#5c5f62] no-underline shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.2),inset_0_2px_0_0_rgba(255,255,255,0.9)]' }}
+    </p>
+  </div>
+
+  <div class="flex h-full flex-col space-y-4 rounded-lg bg-[#eef3ff] p-6 leading-[1.4] text-[#5c5f62]">
+    <h3 class="text-base font-bold text-[#202223]">Liquid</h3>
+    <p class="flex-1">
+      The Liquid templating language is the backbone of Shopify themes, and is used to load dynamic content on
+      storefronts. Extend Liquid objects to store and present custom data using metafields.
+    </p>
+    <p>
+      {{ 'View the Liquid reference' | link_to: 'https://shopify.dev/docs/api/liquid', class: 'flex w-fit rounded border border-[#8c9196] bg-[#fafbfb] px-[10px] pb-[5px] pt-[3px] text-[#5c5f62] no-underline shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.2),inset_0_2px_0_0_rgba(255,255,255,0.9)]' }}
+    </p>
+  </div>
+
+  <div class="flex h-full flex-col space-y-4 rounded-lg bg-[#eef3ff] p-6 leading-[1.4] text-[#5c5f62]">
+    <h3 class="text-base font-bold text-[#202223]">Best Practices</h3>
+    <p class="flex-1">
+      To optimize your theme development experience, Shopify has established a set of best practices that you can refer
+      to when developing your theme and setting up your toolchains and processes.
+    </p>
+    <p>
+      {{ 'Follow best practices' | link_to: 'https://shopify.dev/docs/storefronts/themes/best-practices', class: 'flex w-fit rounded border border-[#8c9196] bg-[#fafbfb] px-[10px] pb-[5px] pt-[3px] text-[#5c5f62] no-underline shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.2),inset_0_2px_0_0_rgba(255,255,255,0.9)]' }}
+    </p>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Hello World",
+  "settings": [],
+  "presets": [
+    {
+      "name": "Hello World Template",
+      "category": "Demo"
+    }
+  ]
+}
+{% endschema %}
