@@ -1,16 +1,35 @@
 {% comment %}
   LiqKit: demo section showcasing available components.
 {% endcomment %}
-<div class="mx-auto flex max-w-6xl flex-col items-center gap-6 px-6 py-16 text-center">
-  <h2 class="text-3xl font-bold">LiqKit Components</h2>
-  <p class="max-w-xl text-[#5c5f62]">
-    Copy-paste Liquid + Tailwind components for Shopify themes. This demo section
-    shows the bundled snippets.
-  </p>
+<div class="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-16">
+  <div class="text-center">
+    <h2 class="text-3xl font-bold">LiqKit Components</h2>
+    <p class="mx-auto mt-2 max-w-xl text-[#5c5f62]">
+      Copy-paste Liquid + Tailwind components for Shopify themes. This demo section
+      shows the bundled snippets.
+    </p>
+  </div>
+
   <div class="flex flex-wrap items-center justify-center gap-4">
     {% render 'liqkit-button', text: 'Primary action', url: '/collections/all' %}
     {% render 'liqkit-button', text: 'Secondary action', url: '/pages/about' %}
+    {% render 'liqkit-badge', text: 'New', tone: 'green' %}
+    {% render 'liqkit-badge', text: 'Sale', tone: 'red' %}
   </div>
+
+  <div class="grid gap-6 sm:grid-cols-3">
+    {% render 'liqkit-card', title: 'Card one', body: 'Cards are simple, reusable, and theme-editor friendly.' %}
+    {% render 'liqkit-card', title: 'Card two', body: 'Rendered with the render tag and styled with Tailwind.' %}
+    {% render 'liqkit-card', title: 'Card three', body: 'Copy them into your theme and own them.' %}
+  </div>
+
+  <div class="mx-auto w-full max-w-2xl space-y-3">
+    {% render 'liqkit-accordion', title: 'What is LiqKit?', body: 'A free, open-source component library for Shopify Liquid themes.' %}
+    {% render 'liqkit-accordion', title: 'Do I need a build step?', body: 'No — components are plain Liquid snippets with Tailwind utilities. The CSS is compiled once and committed.' %}
+    {% render 'liqkit-accordion', title: 'Is it theme-check clean?', body: 'Yes — the whole library passes Shopify theme check.' %}
+  </div>
+
+  {% render 'liqkit-product-card', product: all_products.first %}
 </div>
 
 {% schema %}

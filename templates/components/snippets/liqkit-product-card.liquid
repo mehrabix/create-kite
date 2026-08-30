@@ -1,0 +1,30 @@
+{% comment %}
+  LiqKit: product-card component snippet.
+  Usage: {% render 'liqkit-product-card', product: product %}
+  Requires a product object. Links to the product page.
+{% endcomment %}
+{%- if product -%}
+  <a href="{{ product.url }}" class="group flex flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white transition hover:shadow-md">
+    <div class="aspect-square overflow-hidden bg-neutral-100">
+      {%- if product.featured_image -%}
+        {{ product.featured_image | image_url: width: 600 | image_tag: loading: 'lazy', class: 'h-full w-full object-cover transition group-hover:scale-105' }}
+      {%- else -%}
+        <div class="flex h-full w-full items-center justify-center text-neutral-400">No image</div>
+      {%- endif -%}
+    </div>
+    <div class="flex flex-1 flex-col gap-2 p-4">
+      <h3 class="text-sm font-medium text-neutral-900">{{ product.title }}</h3>
+      {% render 'liqkit-price', product: product %}
+      <button
+        type="button"
+        class="mt-auto inline-flex items-center justify-center rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700"
+      >
+        Add to cart
+      </button>
+    </div>
+  </a>
+{%- else -%}
+  <div class="rounded-lg border border-dashed border-neutral-300 p-6 text-sm text-neutral-400">
+    Pass a product: {% raw %}{% render 'liqkit-product-card', product: product %}{% endraw %}
+  </div>
+{%- endif -%}

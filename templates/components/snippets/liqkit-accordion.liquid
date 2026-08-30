@@ -1,0 +1,13 @@
+{% comment %}
+  LiqKit: accordion component snippet (no JS needed).
+  Usage: {% render 'liqkit-accordion', title: 'Question', body: 'Answer' %}
+{% endcomment %}
+<details class="group rounded-lg border border-neutral-200 bg-white">
+  <summary class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-neutral-900 [&::-webkit-details-marker]:hidden">
+    {{ title }}
+    <span class="text-neutral-400 transition-transform group-open:rotate-45">+</span>
+  </summary>
+  <div class="border-t border-neutral-100 px-4 py-3 text-sm leading-relaxed text-neutral-600">
+    {{ body }}
+  </div>
+</details>

@@ -24,6 +24,58 @@ const col = {
 
 let projectName = null;
 const flags = parseFlags(process.argv.slice(2));
+const subcommand = process.argv[2];
+
+/* ---------- subcommands: add / list ---------- */
+
+if (subcommand === "list") {
+  const dir = path.join(TEMPLATES_DIR, "components", "snippets");
+  const files = await fs.readdir(dir);
+  console.log(
+    `${col.cyan}🧩 LiqKit components:${col.reset}`
+  );
+  for (const f of files.filter((f) => f.endsWith(".liquid")).sort()) {
+    console.log(`  ${f.replace("liqkit-", "").replace(".liquid", "")}`);
+  }
+  process.exit(0);
+}
+
+if (subcommand === "add") {
+  const name = process.argv[3];
+  if (!name) {
+    console.error(`${col.red}Usage: create-kite add <component>${col.reset}`);
+    process.exit(1);
+  }
+  const targetSnippets = path.join(process.cwd(), "snippets");
+  try {
+    await fs.access(targetSnippets);
+  } catch {
+    console.error(
+      `${col.red}No snippets/ folder found — run this inside a Shopify theme.${col.reset}`
+    );
+    process.exit(1);
+  }
+  const src = path.join(
+    TEMPLATES_DIR,
+    "components",
+    "snippets",
+    `liqkit-${name}.liquid`
+  );
+  try {
+    await fs.access(src);
+  } catch {
+    console.error(
+      `${col.red}Unknown component "${name}". Run "create-kite list" to see available components.${col.reset}`
+    );
+    process.exit(1);
+  }
+  await fs.copyFile(src, path.join(targetSnippets, `liqkit-${name}.liquid`));
+  console.log(
+    `${col.green}✅ Added liqkit-${name}.liquid to snippets/.${col.reset}`
+  );
+  console.log(`${col.blue}Render it with: ${col.reset}${col.cyan}{% render 'liqkit-${name}' ... %}${col.reset}`);
+  process.exit(0);
+}
 
 // First non-flag arg is the project name (flags may come before or after)
 for (let i = 2; i < process.argv.length; i++) {
@@ -58,6 +110,8 @@ for (let i = 2; i < process.argv.length; i++) {
         check: "recommended",
         vscode: false,
         ci: "none",
+        hooks: false,
+        deploy: false,
         store: flags.store || "",
         git: true,
         install: true,
@@ -72,7 +126,8 @@ for (let i = 2; i < process.argv.length; i++) {
         prettier: await promptConfirm("Add Prettier + Liquid plugin?", true),
         check: await promptChoice("theme-check preset", ["recommended", "strict"]),
         vscode: await promptConfirm("Add VS Code workspace config?", false),
-        ci: await promptChoice("GitHub Actions CI", ["none", "check"]),
+        ci: await promptChoice("GitHub Actions CI", ["none", "check", "check+deploy"]),
+        hooks: await promptConfirm("Add git hooks (husky + lint-staged)?", false),
         store: await promptOptional("Store URL? (e.g. my-store.myshopify.com) [skip]", ""),
         git: await promptConfirm("Initialize a git repository?", true),
         install: await promptConfirm("Install dependencies now?", true),
@@ -87,6 +142,8 @@ for (let i = 2; i < process.argv.length; i++) {
   if (flags.check) answers.check = flags.check;
   if (flags.vscode !== undefined) answers.vscode = flags.vscode;
   if (flags.ci) answers.ci = flags.ci;
+  if (flags.hooks !== undefined) answers.hooks = flags.hooks;
+  if (flags.deploy !== undefined) answers.deploy = flags.deploy;
   if (flags.template) answers.template = flags.template;
   if (flags.pm) answers.pm = flags.pm;
   if (flags.store) answers.store = flags.store;
@@ -122,6 +179,7 @@ for (let i = 2; i < process.argv.length; i++) {
     if (answers.prettier) await setupPrettier(targetDir);
     if (answers.vscode) await setupVscode(targetDir);
     if (answers.ci !== "none") await setupCi(targetDir, answers);
+    if (answers.hooks) await setupHooks(targetDir, answers);
 
     if (answers.install) {
       console.log(`${col.cyan}📦 Installing dependencies (${answers.pm})...${col.reset}`);
@@ -371,6 +429,12 @@ function themeScripts(answers, projectName) {
   if (answers.prettier) {
     scripts["format"] = "prettier --write .";
   }
+  if (answers.hooks) {
+    scripts["prepare"] = "husky";
+  }
+  if (answers.deploy) {
+    scripts["deploy"] = "shopify theme push --unpublished --confirm";
+  }
   return scripts;
 }
 
@@ -523,6 +587,27 @@ async function setupCi(targetDir, answers) {
   const ghDir = path.join(targetDir, ".github", "workflows");
   await fs.mkdir(ghDir, { recursive: true });
   const failLevel = answers.check === "strict" ? "error" : "warning";
+  const deployJob =
+    answers.ci === "check+deploy"
+      ? `
+  deploy:
+    needs: theme-check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Shopify CLI
+        run: npm install -g @shopify/cli
+      - name: Push theme (unpublished)
+        env:
+          SHOPIFY_CLI_THEME_TOKEN: \${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}
+          SHOPIFY_FLAG_STORE: \${{ secrets.SHOPIFY_STORE }}
+        run: shopify theme push --unpublished --confirm
+`
+      : "";
   await fs.writeFile(
     path.join(ghDir, "theme-check.yml"),
     `name: Theme Check
@@ -544,7 +629,30 @@ jobs:
         run: npm install -g @shopify/cli
       - name: Theme check
         run: shopify theme check --fail-level ${failLevel}
+${deployJob}
 `
+  );
+}
+
+async function setupHooks(targetDir, answers) {
+  // husky + lint-staged: run prettier (and theme-check) on pre-commit
+  const huskyDir = path.join(targetDir, ".husky");
+  await fs.mkdir(huskyDir, { recursive: true });
+  await fs.writeFile(
+    path.join(huskyDir, "pre-commit"),
+    `npx lint-staged
+`
+  );
+  const lintStaged = {
+    "*.liquid": ["prettier --write"],
+    "*.{css,js,ts,json,md}": ["prettier --write"],
+  };
+  if (answers.check === "strict") {
+    lintStaged["*.liquid"] = ["prettier --write", "shopify theme check --fail-level error"];
+  }
+  await fs.writeFile(
+    path.join(targetDir, ".lintstagedrc.json"),
+    JSON.stringify(lintStaged, null, 2) + "\n"
   );
 }
 
@@ -630,6 +738,10 @@ async function writePackageJson(targetDir, answers, projectName) {
     devDeps["prettier"] = "^3.5.0";
     devDeps["@shopify/prettier-plugin-liquid"] = "^1.11.0";
   }
+  if (answers.hooks) {
+    devDeps["husky"] = "^9.1.0";
+    devDeps["lint-staged"] = "^15.4.0";
+  }
   const pkg = {
     name: pkgName,
     version: "0.1.0",
@@ -677,6 +789,35 @@ Scaffolded with [create-kite](https://github.com/mehrabix/create-kite).
 }
 
 function done(answers, targetDir) {
+  if (flags.json) {
+    console.log(
+      JSON.stringify(
+        {
+          ok: true,
+          name: path.basename(targetDir),
+          dir: targetDir,
+          template: answers.template,
+          packageManager: answers.pm,
+          tailwind: answers.tailwind,
+          preflight: answers.preflight,
+          components: answers.components,
+          js: answers.js,
+          prettier: answers.prettier,
+          themeCheck: answers.check,
+          vscode: answers.vscode,
+          ci: answers.ci,
+          hooks: answers.hooks,
+          deploy: answers.deploy,
+          store: answers.store,
+          git: answers.git,
+          installed: answers.install,
+        },
+        null,
+        2
+      )
+    );
+    return;
+  }
   console.log(`${col.green}✅ Project ready in ./${path.basename(targetDir)}${col.reset}`);
   console.log(`${col.blue}Next steps:${col.reset}`);
   console.log(`  cd ${path.basename(targetDir)}`);
@@ -708,6 +849,9 @@ function parseFlags(args) {
     check: undefined,
     vscode: undefined,
     ci: undefined,
+    hooks: undefined,
+    deploy: undefined,
+    json: false,
     template: undefined,
     pm: undefined,
     store: undefined,
@@ -726,11 +870,16 @@ function parseFlags(args) {
     else if (a === "--no-prettier") flags.prettier = false;
     else if (a === "--vscode") flags.vscode = true;
     else if (a === "--no-vscode") flags.vscode = false;
+    else if (a === "--hooks") flags.hooks = true;
+    else if (a === "--no-hooks") flags.hooks = false;
+    else if (a === "--deploy") flags.deploy = true;
+    else if (a === "--no-deploy") flags.deploy = false;
     else if (a === "--no-git") flags.git = false;
     else if (a === "--no-install") flags.install = false;
     else if (a === "--js") flags.js = args[++i];
     else if (a === "--check") flags.check = args[++i];
     else if (a === "--ci") flags.ci = args[++i];
+    else if (a === "--json") flags.json = true;
     else if (a === "--template") flags.template = args[++i];
     else if (a === "--pm") flags.pm = args[++i];
     else if (a === "--store") flags.store = args[++i];

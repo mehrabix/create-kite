@@ -1,0 +1,23 @@
+{% comment %}
+  LiqKit: modal component snippet (native <dialog>, no JS).
+  Usage: {% render 'liqkit-modal', id: 'my-modal', title: 'Modal title', body: 'Modal body' %}
+  Open with: <button onclick="document.getElementById('my-modal').showModal()">Open</button>
+{% endcomment %}
+<dialog id="{{ id }}" class="m-auto rounded-lg p-0 shadow-xl backdrop:bg-black/40">
+  <div class="flex w-full max-w-md flex-col">
+    <div class="flex items-center justify-between border-b border-neutral-100 px-5 py-4">
+      <h3 class="text-base font-semibold text-neutral-900">{{ title }}</h3>
+      <button
+        type="button"
+        class="text-neutral-400 hover:text-neutral-600"
+        onclick="this.closest('dialog').close()"
+        aria-label="Close"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="px-5 py-4 text-sm leading-relaxed text-neutral-600">
+      {{ body }}
+    </div>
+  </div>
+</dialog>
