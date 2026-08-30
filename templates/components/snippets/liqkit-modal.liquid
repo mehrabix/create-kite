@@ -1,23 +1,68 @@
 {% comment %}
-  LiqKit: modal component snippet (native <dialog>, no JS).
-  Usage: {% render 'liqkit-modal', id: 'my-modal', title: 'Modal title', body: 'Modal body' %}
-  Open with: <button onclick="document.getElementById('my-modal').showModal()">Open</button>
+  LiqKit: modal (dialog) component snippet — shadcn-compatible, JS-driven.
+  Usage: {% render 'liqkit-modal', id: 'my-modal', trigger_text: 'Open modal', title: 'Modal title', body: 'Modal body' %}
+  Requires liqkit.js. Renders a trigger button + a portal-style overlay with
+  escape-to-close, outside-click, scroll lock, and fade/zoom animations.
 {% endcomment %}
-<dialog id="{{ id }}" class="m-auto rounded-lg bg-card p-0 text-card-foreground shadow-xl backdrop:bg-black/40">
-  <div class="flex w-full max-w-md flex-col">
-    <div class="flex items-center justify-between border-b border-border px-5 py-4">
-      <h3 class="text-base font-semibold">{{ title }}</h3>
-      <button
-        type="button"
-        class="text-muted-foreground hover:text-foreground"
-        onclick="this.closest('dialog').close()"
-        aria-label="Close"
-      >
-        ✕
-      </button>
+<button
+  type="button"
+  data-liqkit-dialog-trigger="{{ id }}"
+  data-slot="button"
+  class="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium whitespace-nowrap text-primary-foreground transition-all outline-none hover:bg-primary/90 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+>
+  {{ trigger_text | default: 'Open modal' }}
+</button>
+
+<div
+  id="{{ id }}"
+  data-liqkit-overlay
+  data-state="closed"
+  hidden
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+>
+  <div
+    data-slot="dialog-content"
+    class="grid w-full max-w-lg gap-4 rounded-lg border bg-background p-6 shadow-lg outline-none"
+  >
+    <div data-slot="dialog-header" class="flex flex-col gap-2 text-center sm:text-left">
+      <h3 data-slot="dialog-title" class="text-lg leading-none font-semibold">{{ title }}</h3>
+      {% if description %}
+        <p data-slot="dialog-description" class="text-sm text-muted-foreground">{{ description }}</p>
+      {% endif %}
     </div>
-    <div class="px-5 py-4 text-sm leading-relaxed text-muted-foreground">
-      {{ body }}
+    <div class="text-sm leading-relaxed text-muted-foreground">{{ body }}</div>
+    <div data-slot="dialog-footer" class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      {% if close_text %}
+        <button
+          type="button"
+          data-liqkit-close
+          class="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border bg-background px-4 py-2 text-sm font-medium shadow-xs outline-none hover:bg-accent hover:text-accent-foreground"
+        >
+          {{ close_text }}
+        </button>
+      {% endif %}
+      {% if confirm_text %}
+        <button
+          type="button"
+          data-liqkit-close
+          data-liqkit-autofocus
+          class="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground outline-none hover:bg-primary/90"
+        >
+          {{ confirm_text }}
+        </button>
+      {% endif %}
     </div>
+    <button
+      type="button"
+      data-liqkit-close
+      aria-label="Close"
+      class="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden"
+    >
+      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </svg>
+      <span class="sr-only">Close</span>
+    </button>
   </div>
-</dialog>
+</div>

@@ -1,15 +1,22 @@
 {% comment %}
-  LiqKit: card component snippet.
-  Usage: {% render 'liqkit-card', title: 'Card title', body: 'Card body text' %}
+  LiqKit: card component snippet (shadcn-compatible).
+  Usage: {% render 'liqkit-card', title: 'Card title', description: 'Card description', body: 'Body text' %}
 {% endcomment %}
-<div class="flex flex-col rounded-lg border border-border bg-card text-card-foreground p-6 shadow-sm">
-  {% if title %}
-    <h3 class="text-lg font-semibold">{{ title }}</h3>
-  {% endif %}
+<div data-slot="card" class="flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm">
+  <div data-slot="card-header" class="grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6">
+    {% if title %}
+      <div data-slot="card-title" class="leading-none font-semibold">{{ title }}</div>
+    {% endif %}
+    {% if description %}
+      <div data-slot="card-description" class="text-sm text-muted-foreground">{{ description }}</div>
+    {% endif %}
+  </div>
   {% if body %}
-    <p class="mt-2 text-sm leading-relaxed text-muted-foreground">{{ body }}</p>
+    <div data-slot="card-content" class="px-6">
+      <div class="text-sm leading-relaxed text-muted-foreground">{{ body }}</div>
+    </div>
   {% endif %}
   {% if footer %}
-    <div class="mt-4 border-t border-border pt-4">{{ footer }}</div>
+    <div data-slot="card-footer" class="flex items-center px-6">{{ footer }}</div>
   {% endif %}
 </div>

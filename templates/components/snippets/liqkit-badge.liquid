@@ -1,10 +1,26 @@
 {% comment %}
-  LiqKit: badge component snippet.
-  Usage: {% render 'liqkit-badge', text: 'Sale', tone: 'red' %}
-  Tones: red, green, blue, neutral (custom map below)
+  LiqKit: badge component snippet (shadcn-compatible).
+  Usage: {% render 'liqkit-badge', text: 'Sale', variant: 'destructive' %}
+  Variants: default, secondary, destructive, outline, ghost, link
 {% endcomment %}
-{%- assign tone_map = 'red:bg-destructive/10 text-destructive|green:bg-primary/10 text-primary|blue:bg-accent text-accent-foreground|neutral:bg-muted text-muted-foreground' -%}
-{%- assign tone_classes = tone_map | split: '|' | where: 'contains', tone | first | split: ':' | last | default: 'bg-muted text-muted-foreground' -%}
-<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ tone_classes }}">
+{%- case variant -%}
+  {%- when 'secondary' -%}
+    {%- assign v = 'bg-secondary text-secondary-foreground' -%}
+  {%- when 'destructive' -%}
+    {%- assign v = 'bg-destructive text-white dark:bg-destructive/60' -%}
+  {%- when 'outline' -%}
+    {%- assign v = 'border-border text-foreground' -%}
+  {%- when 'ghost' -%}
+    {%- assign v = '' -%}
+  {%- when 'link' -%}
+    {%- assign v = 'text-primary underline-offset-4' -%}
+  {%- else -%}
+    {%- assign v = 'bg-primary text-primary-foreground' -%}
+{%- endcase -%}
+<span
+  data-slot="badge"
+  data-variant="{{ variant | default: 'default' }}"
+  class="inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 {{ v }}"
+>
   {{ text }}
 </span>

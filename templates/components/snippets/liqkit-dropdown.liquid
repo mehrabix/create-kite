@@ -1,0 +1,40 @@
+{% comment %}
+  LiqKit: dropdown menu component snippet — shadcn-compatible, JS-driven.
+  Usage: {% render 'liqkit-dropdown', id: 'my-menu', trigger_text: 'Open menu', items: 'Mute|Mark as read|Block' %}
+  Requires liqkit.js. Items separated by | ; prefix with ! for destructive: '!Delete'
+{% endcomment %}
+<button
+  type="button"
+  data-liqkit-menu-trigger="{{ id }}"
+  data-liqkit-align="{{ align | default: 'end' }}"
+  data-slot="button"
+  class="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border bg-background px-4 py-2 text-sm font-medium shadow-xs outline-none hover:bg-accent hover:text-accent-foreground"
+>
+  {{ trigger_text | default: 'Open menu' }}
+  <svg class="pointer-events-none size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+</button>
+
+<div
+  id="{{ id }}"
+  data-liqkit-overlay
+  data-state="closed"
+  hidden
+  class="z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+>
+  <div data-slot="menu-label" class="px-2 py-1.5 text-sm font-semibold">{{ label }}</div>
+  {%- assign item_list = items | default: 'Item one|Item two' | split: '|' -%}
+  {%- for item in item_list -%}
+    {%- assign is_destructive = item | slice: 0 | == '!' -%}
+    {%- assign label = item | remove_first: '!' -%}
+    <button
+      type="button"
+      data-liqkit-menu-item
+      data-slot="menu-item"
+      class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none focus:bg-accent focus:text-accent-foreground {% if is_destructive %}text-destructive focus:bg-destructive focus:text-destructive-foreground{% else %}text-popover-foreground{% endif %}"
+    >
+      {{ label }}
+    </button>
+  {%- endfor -%}
+</div>

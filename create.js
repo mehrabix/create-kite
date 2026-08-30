@@ -173,6 +173,7 @@ for (let i = 2; i < process.argv.length; i++) {
     if (answers.components) {
       console.log(`${col.cyan}🧩 Installing LiqKit components...${col.reset}`);
       await copyDir(path.join(TEMPLATES_DIR, "components"), targetDir);
+      await setupLiqKitJs(targetDir);
     }
 
     console.log(`${col.cyan}📝 Writing project files...${col.reset}`);
@@ -451,52 +452,20 @@ function themeScripts(answers, projectName) {
 }
 
 async function writeTailwind(targetDir, answers) {
-  const preflightImport = answers.preflight
-    ? '@import "tailwindcss/preflight.css" layer(base);\n'
-    : "";
-  const input = `@layer theme, base, components, utilities;
-@import "tailwindcss/theme.css" layer(theme);
-${preflightImport}@import "tailwindcss/utilities.css" layer(utilities);
-
-/* ── shadcn/ui-style token mapping ─────────────────────
-   Maps Tailwind color utilities to the CSS variables
-   defined in snippets/css-variables.liquid, so classes
-   like bg-primary, text-muted-foreground, border-border
-   recolor at runtime from the theme editor settings. */
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
-
-/* Scan Liquid files for utility classes */
-@source "../layout";
-@source "../sections";
-@source "../snippets";
-@source "../blocks";
-@source "../templates";
-`;
+  // Single source of truth: the minimal template's tailwind-input.css
+  const templateInput = path.join(
+    TEMPLATES_DIR,
+    "minimal",
+    "src",
+    "tailwind-input.css"
+  );
+  let input = await fs.readFile(templateInput, "utf-8");
+  if (answers.preflight) {
+    input = input.replace(
+      '@import "tailwindcss/utilities.css" layer(utilities);',
+      '@import "tailwindcss/preflight.css" layer(base);\n@import "tailwindcss/utilities.css" layer(utilities);'
+    );
+  }
   await fs.writeFile(path.join(targetDir, "src", "tailwind-input.css"), input);
 }
 
@@ -509,6 +478,22 @@ async function appendThemeStylesheet(targetDir) {
     await fs.writeFile(
       themePath,
       theme.replace(marker, marker + tailwindTag)
+    );
+  }
+}
+
+async function setupLiqKitJs(targetDir) {
+  // Copy liqkit.js runtime into assets/ (already copied by the components template,
+  // but ensure it exists) and inject the script tag into theme.liquid.
+  const themePath = path.join(targetDir, "layout", "theme.liquid");
+  const theme = await fs.readFile(themePath, "utf-8");
+  if (!theme.includes("liqkit.js")) {
+    await fs.writeFile(
+      themePath,
+      theme.replace(
+        "</body>",
+        `    <script src="{{ 'liqkit.js' | asset_url }}" defer></script>\n  </body>`
+      )
     );
   }
 }

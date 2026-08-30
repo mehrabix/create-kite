@@ -1,167 +1,158 @@
 {% comment %}
-  LiqKit: showcase section — a shadcn/ui-style landing page for the component library.
-  Add this section to any page to demo every LiqKit component with the token system.
+  LiqKit: showcase section — shadcn/ui landing page replica.
+  Matches ui.shadcn.com structure: PageHeader (announcement, heading,
+  description, actions) + CardsDemo masonry grid with skeleton rails,
+  muted bg, and gradient fade overlays. Requires liqkit.js.
 {% endcomment %}
 
-<div class="bg-background text-foreground">
-  <div class="mx-auto max-w-6xl px-6 py-20">
+<div class="flex flex-1 flex-col bg-background text-foreground">
+  {% comment %} ── PageHeader ── {% endcomment %}
+  <section class="border-grid border-b border-border/50">
+    <div class="mx-auto w-full px-2">
+      <div class="mx-auto flex max-w-[1400px] flex-col items-center gap-2 px-6 py-8 text-center md:py-16 lg:py-20 xl:gap-4">
+        {% comment %} Announcement badge {% endcomment %}
+        <a
+          href="https://github.com/mehrabix/liqkit"
+          class="inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent bg-secondary px-2 py-0.5 text-xs font-medium whitespace-nowrap text-secondary-foreground no-underline transition-[color,box-shadow] hover:bg-secondary/80"
+        >
+          New Dropdown & Tabs components
+          <svg class="size-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </svg>
+        </a>
 
-    {% comment %} ── Announcement pill ── {% endcomment %}
-    <div class="mb-8 flex justify-center">
-      <span class="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
-        <span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
-        LiqKit v0.3 — copy-paste Liquid + Tailwind
-      </span>
-    </div>
+        {% comment %} Heading {% endcomment %}
+        <h1 class="leading-tighter max-w-4xl text-3xl font-semibold tracking-tight text-balance text-foreground lg:leading-[1.1] xl:text-5xl xl:tracking-tighter">
+          The Foundation for your Design System
+        </h1>
 
-    {% comment %} ── Hero ── {% endcomment %}
-    <div class="text-center">
-      <h1 class="mx-auto max-w-3xl text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
-        Build your component library.
-      </h1>
-      <p class="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-        Beautifully designed Liquid components that you copy-paste into your Shopify
-        theme. Accessible. Customizable. Open Source. Powered by CSS design tokens.
-      </p>
-      <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
-        {% render 'liqkit-button', text: 'Get started', url: '#components', variant: 'primary' %}
-        {% render 'liqkit-button', text: 'View on GitHub', url: 'https://github.com/mehrabix/liqkit', variant: 'outline' %}
-      </div>
-      <p class="mt-4 text-xs text-muted-foreground">
-        Copy-paste with {% raw %}{% render 'liqkit-button' %}{% endraw %} — no runtime, no framework, no build step for merchants.
-      </p>
-    </div>
+        {% comment %} Description {% endcomment %}
+        <p class="max-w-4xl text-base text-balance text-foreground sm:text-lg">
+          Beautifully designed Liquid components that you copy-paste into your
+          Shopify theme. Accessible. Customizable. Open Source. Powered by CSS
+          design tokens — exactly like shadcn/ui.
+        </p>
 
-    {% comment %} ── Terminal card ── {% endcomment %}
-    <div class="mx-auto mt-12 max-w-2xl">
-      <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-        <div class="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
-          <span class="h-2.5 w-2.5 rounded-full bg-destructive/60"></span>
-          <span class="h-2.5 w-2.5 rounded-full bg-accent-foreground/30"></span>
-          <span class="h-2.5 w-2.5 rounded-full bg-muted-foreground/40"></span>
-          <span class="ml-3 font-mono text-xs text-muted-foreground">terminal</span>
-        </div>
-        <div class="p-4 font-mono text-sm leading-relaxed">
-          <p class="text-muted-foreground">$ npx create-kite my-theme --components</p>
-          <p class="text-foreground">✓ Template copied (components)</p>
-          <p class="text-foreground">✓ Tailwind CSS v4 wired (design tokens)</p>
-          <p class="text-foreground">✓ LiqKit components installed (7 snippets)</p>
-          <p class="text-muted-foreground">$ pnpm dev</p>
+        {% comment %} Actions {% endcomment %}
+        <div class="flex w-full items-center justify-center gap-2 pt-2">
+          {% render 'liqkit-button', text: 'Get Started', url: '#', variant: 'default', size: 'default' %}
+          {% render 'liqkit-button', text: 'View Components', url: '#components', variant: 'secondary', size: 'default' %}
         </div>
       </div>
     </div>
+  </section>
 
-    {% comment %} ── Component preview grid ── {% endcomment %}
-    <div id="components" class="mt-20">
-      <h2 class="text-center text-2xl font-semibold text-foreground sm:text-3xl">
-        The components
-      </h2>
-      <p class="mx-auto mt-2 max-w-xl text-center text-muted-foreground">
-        Every component is styled entirely with CSS tokens — recolor the whole theme
-        from the theme editor without touching code.
-      </p>
+  {% comment %} ── CardsDemo masonry grid (shadcn-style) ── {% endcomment %}
+  <div class="relative flex w-full max-w-none flex-col gap-8 overflow-hidden bg-muted p-6 pb-0 dark:bg-background">
+    <div class="relative z-10 mx-auto grid gap-8 md:max-w-3xl md:grid-cols-2 lg:max-w-none lg:grid-cols-3 xl:max-w-[1400px]">
 
-      <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-
-        {% comment %} Buttons {% endcomment %}
-        <div class="flex flex-col rounded-lg border border-border bg-card p-6">
-          <h3 class="text-sm font-medium text-card-foreground">Buttons</h3>
-          <div class="mt-4 flex flex-col items-start gap-3">
-            {% render 'liqkit-button', text: 'Primary', url: '#' %}
-            {% render 'liqkit-button', text: 'Secondary', url: '#', variant: 'secondary' %}
-            {% render 'liqkit-button', text: 'Outline', url: '#', variant: 'outline' %}
+      {% comment %} Column 1 — UI elements + sidebar nav {% endcomment %}
+      <div class="flex flex-col items-start gap-8">
+        <div data-slot="card" class="w-full flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm">
+          <div class="flex flex-wrap gap-2 px-6">
+            {% render 'liqkit-button', text: 'Button', url: '#', variant: 'default', size: 'sm' %}
+            {% render 'liqkit-button', text: 'Secondary', url: '#', variant: 'secondary', size: 'sm' %}
+            {% render 'liqkit-button', text: 'Outline', url: '#', variant: 'outline', size: 'sm' %}
+          </div>
+          <div class="flex flex-wrap items-center gap-2 px-6">
+            {% render 'liqkit-badge', text: 'Badge', variant: 'default' %}
+            {% render 'liqkit-badge', text: 'Secondary', variant: 'secondary' %}
+            {% render 'liqkit-badge', text: 'Destructive', variant: 'destructive' %}
+          </div>
+          <div class="px-6">
+            {% render 'liqkit-switch', id: 'showcase-switch-1', checked: true, label: 'Enable alerts' %}
           </div>
         </div>
 
-        {% comment %} Badges {% endcomment %}
-        <div class="flex flex-col rounded-lg border border-border bg-card p-6">
-          <h3 class="text-sm font-medium text-card-foreground">Badges</h3>
-          <div class="mt-4 flex flex-wrap items-center gap-2">
-            {% render 'liqkit-badge', text: 'Default', tone: 'neutral' %}
-            {% render 'liqkit-badge', text: 'New', tone: 'green' %}
-            {% render 'liqkit-badge', text: 'Sale', tone: 'red' %}
-            {% render 'liqkit-badge', text: 'Info', tone: 'blue' %}
+        <div data-slot="card" class="w-full flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm">
+          <div data-slot="card-header" class="grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6">
+            <div data-slot="card-title" class="leading-none font-semibold">Sidebar Nav</div>
+            <div data-slot="card-description" class="text-sm text-muted-foreground">Navigation items</div>
+          </div>
+          <div class="flex flex-col gap-1 px-3">
+            <a href="#" class="flex items-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground no-underline">Home</a>
+            <a href="#" class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground">Products</a>
+            <a href="#" class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground">Orders</a>
+            <a href="#" class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground no-underline hover:bg-accent hover:text-accent-foreground">Settings</a>
           </div>
         </div>
 
-        {% comment %} Cards {% endcomment %}
-        <div class="flex flex-col rounded-lg border border-border bg-card p-6">
-          <h3 class="text-sm font-medium text-card-foreground">Cards</h3>
-          <div class="mt-4">
-            {% render 'liqkit-card', title: 'Card title', body: 'A reusable card component using bg-card, border-border and text-muted-foreground tokens.' %}
+        <div data-slot="card" class="w-full flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm">
+          <div data-slot="card-header" class="grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6">
+            <div data-slot="card-title" class="leading-none font-semibold">Accordion</div>
+            <div data-slot="card-description" class="text-sm text-muted-foreground">JS-driven, animated</div>
+          </div>
+          <div class="px-6">
+            {% render 'liqkit-accordion', title: 'Is it accessible?', body: 'Yes — focus-visible rings, aria-expanded, keyboard support.' %}
           </div>
         </div>
-
-        {% comment %} Accordion {% endcomment %}
-        <div class="flex flex-col rounded-lg border border-border bg-card p-6">
-          <h3 class="text-sm font-medium text-card-foreground">Accordion</h3>
-          <div class="mt-4 space-y-2">
-            {% render 'liqkit-accordion', title: 'Is it accessible?', body: 'Yes — native details/summary, keyboard-friendly, no JS required.' %}
-            {% render 'liqkit-accordion', title: 'Does it use tokens?', body: 'Yes — every color and radius resolves from CSS variables.' %}
-          </div>
-        </div>
-
-        {% comment %} Modal {% endcomment %}
-        <div class="flex flex-col rounded-lg border border-border bg-card p-6">
-          <h3 class="text-sm font-medium text-card-foreground">Modal</h3>
-          <div class="mt-4 flex items-center gap-3">
-            <button
-              type="button"
-              class="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-              onclick="document.getElementById('showcase-modal').showModal()"
-            >
-              Open modal
-            </button>
-            <p class="text-xs text-muted-foreground">Native &lt;dialog&gt;</p>
-          </div>
-          {% render 'liqkit-modal', id: 'showcase-modal', title: 'LiqKit modal', body: 'A dialog built with the native HTML element — zero JavaScript required, fully token-styled.' %}
-        </div>
-
-        {% comment %} Price {% endcomment %}
-        <div class="flex flex-col rounded-lg border border-border bg-card p-6">
-          <h3 class="text-sm font-medium text-card-foreground">Price</h3>
-          <div class="mt-4 flex flex-col items-start gap-3">
-            <div class="flex items-baseline gap-2">
-              <span class="text-base font-semibold text-foreground">$120.00</span>
-            </div>
-            <div class="flex items-baseline gap-2">
-              <span class="text-base font-semibold text-foreground">$90.00</span>
-              <s class="text-sm text-muted-foreground">$120.00</s>
-              <span class="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">25% off</span>
-            </div>
-          </div>
-        </div>
-
       </div>
+
+      {% comment %} Column 2 — dropdown + tabs + analytics {% endcomment %}
+      <div class="hidden flex-col gap-8 lg:flex">
+        <div data-slot="card" class="w-full flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm">
+          <div data-slot="card-header" class="grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6">
+            <div data-slot="card-title" class="leading-none font-semibold">Dropdown Menu</div>
+            <div data-slot="card-description" class="text-sm text-muted-foreground">Portaled, escape to close</div>
+          </div>
+          <div class="px-6">
+            {% render 'liqkit-dropdown', id: 'showcase-dropdown', trigger_text: 'Quick actions', label: 'Actions', items: 'Mute conversation|Mark as read|Block user|!Delete conversation' %}
+          </div>
+        </div>
+
+        <div data-slot="card" class="w-full flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm">
+          <div data-slot="card-header" class="grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6">
+            <div data-slot="card-title" class="leading-none font-semibold">Tabs</div>
+            <div data-slot="card-description" class="text-sm text-muted-foreground">Arrow-key navigation</div>
+          </div>
+          <div class="px-6">
+            {% render 'liqkit-tabs', id: 'showcase-tabs', tabs: 'Account|Password', panels: 'Manage your account settings and preferences.|Change your password and security options.' %}
+          </div>
+        </div>
+
+        <div data-slot="card" class="w-full flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm">
+          <div data-slot="card-header" class="grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6">
+            <div data-slot="card-title" class="leading-none font-semibold">Analytics</div>
+            <div data-slot="card-description" class="text-sm text-muted-foreground">418.2K Visitors <span class="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">+10%</span></div>
+          </div>
+          <svg viewBox="0 0 100 86" preserveAspectRatio="none" class="aspect-[1/0.35] w-full px-6 text-chart-1" role="img" aria-label="Visitor trend">
+            <path d="M0 52L18 40L36 46L54 70L72 50L100 49V86H0Z" fill="currentColor" opacity="0.28" />
+            <path d="M0 52L18 40L36 46L54 70L72 50L100 49" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" />
+          </svg>
+        </div>
+      </div>
+
+      {% comment %} Column 3 — modal + pricing {% endcomment %}
+      <div class="hidden flex-col gap-8 md:flex">
+        <div data-slot="card" class="w-full flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm">
+          <div data-slot="card-header" class="grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6">
+            <div data-slot="card-title" class="leading-none font-semibold">Dialog</div>
+            <div data-slot="card-description" class="text-sm text-muted-foreground">Focus trap, scroll lock, zoom-in</div>
+          </div>
+          <div class="px-6">
+            {% render 'liqkit-modal', id: 'showcase-modal', trigger_text: 'Open dialog', title: 'Allow accessory to connect?', description: 'Do you want to allow the USB accessory to connect to this device and your data?', body: '', close_text: 'Don\'t allow', confirm_text: 'Allow' %}
+          </div>
+        </div>
+
+        <div data-slot="card" class="w-full flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm">
+          <div data-slot="card-header" class="grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6">
+            <div data-slot="card-title" class="leading-none font-semibold">Price</div>
+            <div data-slot="card-description" class="text-sm text-muted-foreground">Compare-at + discount</div>
+          </div>
+          <div class="flex items-baseline gap-2 px-6">
+            <span class="text-base font-semibold text-foreground">$90.00</span>
+            <s class="text-sm text-muted-foreground">$120.00</s>
+            <span class="rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-white">25% off</span>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    {% comment %} ── Dark mode demo (shows .dark tokens) ── {% endcomment %}
-    <div class="dark mt-20 overflow-hidden rounded-xl border border-border bg-background text-foreground">
-      <div class="flex items-center justify-between border-b border-border px-6 py-4">
-        <h2 class="text-lg font-semibold">Dark mode</h2>
-        <span class="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">.dark tokens</span>
-      </div>
-      <div class="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
-        {% render 'liqkit-button', text: 'Primary', url: '#' %}
-        {% render 'liqkit-button', text: 'Outline', url: '#', variant: 'outline' %}
-        {% render 'liqkit-badge', text: 'Sale', tone: 'red' %}
-        {% render 'liqkit-card', title: 'Dark card', body: 'Same component, different tokens — the .dark class on this container does all the work.' %}
-        {% render 'liqkit-accordion', title: 'Tokens in dark mode', body: 'The CSS variables swap via .dark and every utility follows automatically.' %}
-      </div>
-    </div>
-
-    {% comment %} ── Footer CTA ── {% endcomment %}
-    <div class="mt-20 text-center">
-      <h2 class="text-2xl font-semibold text-foreground sm:text-3xl">Own your components.</h2>
-      <p class="mx-auto mt-2 max-w-xl text-muted-foreground">
-        Copy them into your theme, style them your way. No vendor lock-in —
-        everything is plain Liquid and CSS.
-      </p>
-      <div class="mt-6 flex justify-center">
-        {% render 'liqkit-button', text: 'Copy the library', url: 'https://github.com/mehrabix/liqkit', variant: 'primary' %}
-      </div>
-    </div>
-
+    {% comment %} Gradient overlays (shadcn fade) {% endcomment %}
+    <div class="pointer-events-none absolute inset-x-0 top-0 z-1 h-32 bg-linear-to-b from-background via-muted to-transparent dark:hidden"></div>
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-48 bg-linear-to-t from-background via-muted/80 to-transparent lg:h-80 xl:h-64 dark:via-background/80"></div>
   </div>
 </div>
 
