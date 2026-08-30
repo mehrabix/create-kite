@@ -157,8 +157,12 @@ for (let i = 2; i < process.argv.length; i++) {
   try {
     await fs.mkdir(targetDir, { recursive: true });
 
+    // minimal is the base; full/components layer on top of it
     console.log(`${col.cyan}⏳ Copying template "${answers.template}"...${col.reset}`);
-    await copyDir(path.join(TEMPLATES_DIR, answers.template), targetDir);
+    await copyDir(path.join(TEMPLATES_DIR, "minimal"), targetDir);
+    if (answers.template !== "minimal") {
+      await copyDir(path.join(TEMPLATES_DIR, answers.template), targetDir);
+    }
 
     if (answers.tailwind) {
       console.log(`${col.cyan}⚡ Setting up Tailwind CSS v4...${col.reset}`);
