@@ -1,10 +1,19 @@
 {% comment %}
   LiqKit: button component snippet.
-  Usage: {% render 'liqkit-button', text: 'Shop now', url: '/collections/all' %}
+  Usage: {% render 'liqkit-button', text: 'Shop now', url: '/collections/all', variant: 'primary' %}
+  Variants: primary, secondary, outline
 {% endcomment %}
+{%- case variant -%}
+  {%- when 'secondary' -%}
+    {%- assign btn_classes = 'bg-secondary text-secondary-foreground hover:bg-secondary/80' -%}
+  {%- when 'outline' -%}
+    {%- assign btn_classes = 'border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground' -%}
+  {%- else -%}
+    {%- assign btn_classes = 'bg-primary text-primary-foreground hover:bg-primary/90' -%}
+{%- endcase -%}
 <a
   href="{{ url | default: '#' }}"
-  class="inline-flex items-center justify-center rounded-md bg-[#202223] px-4 py-2 text-sm font-medium text-white no-underline transition hover:bg-[#3a3c3d]"
+  class="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition no-underline {{ btn_classes }}"
 >
   {{ text | default: 'Button' }}
 </a>

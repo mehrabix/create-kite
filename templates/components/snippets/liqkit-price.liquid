@@ -5,16 +5,16 @@
 {% endcomment %}
 {%- if product -%}
   <div class="flex items-baseline gap-2">
-    <span class="text-base font-semibold text-neutral-900">
+    <span class="text-base font-semibold text-foreground">
       {{ product.price | money }}
     </span>
     {%- if product.compare_at_price > product.price -%}
-      <s class="text-sm text-neutral-400">{{ product.compare_at_price | money }}</s>
-      <span class="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700">
+      <s class="text-sm text-muted-foreground">{{ product.compare_at_price | money }}</s>
+      <span class="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">
         {{ product.compare_at_price | minus: product.price | times: 100.0 | divided_by: product.compare_at_price | round }}% off
       </span>
     {%- endif -%}
   </div>
 {%- else -%}
-  <span class="text-base font-semibold text-neutral-900">{{ price | default: '' }}</span>
+  <span class="text-base font-semibold text-foreground">{{ price | default: '' }}</span>
 {%- endif -%}
