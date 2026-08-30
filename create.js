@@ -214,12 +214,16 @@ for (let i = 2; i < process.argv.length; i++) {
       }
     }
 
-    if (answers.tailwind) {
+    if (answers.tailwind && answers.install) {
       console.log(`${col.cyan}🎨 Building Tailwind CSS...${col.reset}`);
       const bin = path.join(targetDir, "node_modules", ".bin", "tailwindcss");
       execSync(
         `"${bin}" -i ./src/tailwind-input.css -o ./assets/tailwind.css --minify`,
         { cwd: targetDir, stdio: "inherit" }
+      );
+    } else if (answers.tailwind && !answers.install) {
+      console.log(
+        `${col.yellow}⚠️ Skipping Tailwind build (--no-install). Run "pnpm install && pnpm css:build" when ready.${col.reset}`
       );
     }
 
@@ -412,6 +416,8 @@ function themeScripts(answers, projectName) {
     answers.store !== ""
       ? `shopify theme dev --store ${answers.store}`
       : "shopify theme dev";
+  const storeFlag =
+    answers.store !== "" ? ` --store ${answers.store}` : "";
   const scripts = {
     dev,
     "css:build":
@@ -419,6 +425,11 @@ function themeScripts(answers, projectName) {
     "css:watch":
       "tailwindcss -i ./src/tailwind-input.css -o ./assets/tailwind.css --minify --watch",
     check: "shopify theme check",
+    list: `shopify theme list${storeFlag}`,
+    pull: `shopify theme pull${storeFlag}`,
+    push: `shopify theme push${storeFlag}`,
+    deploy: `shopify theme push --unpublished --confirm${storeFlag}`,
+    open: `shopify theme open${storeFlag}`,
   };
   if (answers.js !== "none") {
     const entry =
@@ -431,9 +442,6 @@ function themeScripts(answers, projectName) {
   }
   if (answers.hooks) {
     scripts["prepare"] = "husky";
-  }
-  if (answers.deploy) {
-    scripts["deploy"] = "shopify theme push --unpublished --confirm";
   }
   return scripts;
 }
