@@ -30,28 +30,52 @@
     if (trigger) trigger.focus();
   });
 
-  /* Click on the backdrop OR outside closes the top-most overlay (Radix behavior) */
+  /* Click on the backdrop OR outside closes the top-most overlay (Radix behavior).
+     Pressing a trigger for the open overlay must NOT close it — the subsequent
+     click event handles toggling, otherwise close-then-reopen happens. */
   document.addEventListener("pointerdown", function (e) {
     var open = $$("[data-liqkit-overlay][data-state='open']");
     if (!open.length) return;
     var top = open[open.length - 1];
+    var onTrigger =
+      e.target.closest &&
+      (e.target.closest('[data-liqkit-dialog-trigger="' + top.id + '"]') ||
+        e.target.closest('[data-liqkit-menu-trigger="' + top.id + '"]'));
+    if (onTrigger) return;
     // Clicking the overlay itself (the backdrop) or outside it closes
     if (e.target === top || !top.contains(e.target)) closeOverlay(top);
   });
 
+  var closeTimers = {};
+
   function closeOverlay(el) {
+    // Guard: already closed or closing
+    var state = el.getAttribute("data-state");
+    if (state === "closed" || state === "closing") return;
     el.setAttribute("data-state", "closing");
     el.classList.add("liqkit-out");
-    setTimeout(function () {
-      el.setAttribute("data-state", "closed");
-      el.classList.remove("liqkit-out");
-      el.hidden = true;
-      document.body.classList.remove("liqkit-scroll-lock");
+    // Cancel any pending close timer from a previous close
+    if (closeTimers[el.id]) clearTimeout(closeTimers[el.id]);
+    closeTimers[el.id] = setTimeout(function () {
+      // Only finish closing if still in closing state (not reopened)
+      if (el.getAttribute("data-state") === "closing") {
+        el.setAttribute("data-state", "closed");
+        el.classList.remove("liqkit-out");
+        el.hidden = true;
+        document.body.classList.remove("liqkit-scroll-lock");
+      }
+      delete closeTimers[el.id];
     }, 150);
   }
 
   function openOverlay(el) {
+    // Cancel any pending close timer so a reopen isn't hidden by it
+    if (closeTimers[el.id]) {
+      clearTimeout(closeTimers[el.id]);
+      delete closeTimers[el.id];
+    }
     document.body.classList.add("liqkit-scroll-lock");
+    el.classList.remove("liqkit-out");
     el.hidden = false;
     el.setAttribute("data-state", "open");
     var focusTarget = $("[data-liqkit-autofocus]", el) || el;
@@ -67,7 +91,12 @@
     var dialog = document.getElementById(id);
     if (!dialog) return;
     e.preventDefault();
-    openOverlay(dialog);
+    // Toggle: clicking the trigger again while open closes it
+    if (dialog.getAttribute("data-state") === "open") {
+      closeOverlay(dialog);
+    } else {
+      openOverlay(dialog);
+    }
   });
 
   /* close buttons inside dialogs */
