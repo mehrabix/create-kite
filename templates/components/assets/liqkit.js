@@ -25,17 +25,18 @@
     closeOverlay(top);
     // Return focus to the trigger
     var trigger = document.querySelector(
-      '[data-liqkit-trigger-for="' + top.id + '"]'
+      '[data-liqkit-dialog-trigger="' + top.id + '"], [data-liqkit-menu-trigger="' + top.id + '"]'
     );
     if (trigger) trigger.focus();
   });
 
-  /* Click outside closes the top-most overlay */
+  /* Click on the backdrop OR outside closes the top-most overlay (Radix behavior) */
   document.addEventListener("pointerdown", function (e) {
     var open = $$("[data-liqkit-overlay][data-state='open']");
     if (!open.length) return;
     var top = open[open.length - 1];
-    if (!top.contains(e.target)) closeOverlay(top);
+    // Clicking the overlay itself (the backdrop) or outside it closes
+    if (e.target === top || !top.contains(e.target)) closeOverlay(top);
   });
 
   function closeOverlay(el) {
