@@ -757,7 +757,9 @@ indent_size = 2
 `;
 
   const pnpmWorkspace =
-    answers.pm === "pnpm" ? "onlyBuiltDependencies:\n  - '@parcel/watcher'\n" : "";
+    answers.pm === "pnpm"
+      ? "allowBuilds:\n  '@parcel/watcher': true\n  esbuild: true\n"
+      : "";
 
   const files = {
     ".gitignore": gitignore,
