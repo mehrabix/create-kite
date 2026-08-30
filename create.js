@@ -53,6 +53,11 @@ for (let i = 2; i < process.argv.length; i++) {
         tailwind: true,
         preflight: false,
         components: false,
+        js: "none",
+        prettier: false,
+        check: "recommended",
+        vscode: false,
+        ci: "none",
         store: flags.store || "",
         git: true,
         install: true,
@@ -63,6 +68,11 @@ for (let i = 2; i < process.argv.length; i++) {
         tailwind: await promptConfirm("Include Tailwind CSS v4?", true),
         preflight: false,
         components: await promptConfirm("Include LiqKit components?", false),
+        js: await promptChoice("JavaScript layer", ["none", "alpine", "vanilla-ts"]),
+        prettier: await promptConfirm("Add Prettier + Liquid plugin?", true),
+        check: await promptChoice("theme-check preset", ["recommended", "strict"]),
+        vscode: await promptConfirm("Add VS Code workspace config?", false),
+        ci: await promptChoice("GitHub Actions CI", ["none", "check"]),
         store: await promptOptional("Store URL? (e.g. my-store.myshopify.com) [skip]", ""),
         git: await promptConfirm("Initialize a git repository?", true),
         install: await promptConfirm("Install dependencies now?", true),
@@ -72,6 +82,11 @@ for (let i = 2; i < process.argv.length; i++) {
   if (flags.tailwind !== undefined) answers.tailwind = flags.tailwind;
   if (flags.preflight) answers.preflight = true;
   if (flags.components !== undefined) answers.components = flags.components;
+  if (flags.js) answers.js = flags.js;
+  if (flags.prettier !== undefined) answers.prettier = flags.prettier;
+  if (flags.check) answers.check = flags.check;
+  if (flags.vscode !== undefined) answers.vscode = flags.vscode;
+  if (flags.ci) answers.ci = flags.ci;
   if (flags.template) answers.template = flags.template;
   if (flags.pm) answers.pm = flags.pm;
   if (flags.store) answers.store = flags.store;
@@ -103,6 +118,10 @@ for (let i = 2; i < process.argv.length; i++) {
     await writeRootFiles(targetDir, answers, projectName);
     await writePackageJson(targetDir, answers, projectName);
     await writeReadme(targetDir, answers, projectName);
+    if (answers.js !== "none") await setupJsLayer(targetDir, answers, projectName);
+    if (answers.prettier) await setupPrettier(targetDir);
+    if (answers.vscode) await setupVscode(targetDir);
+    if (answers.ci !== "none") await setupCi(targetDir, answers);
 
     if (answers.install) {
       console.log(`${col.cyan}📦 Installing dependencies (${answers.pm})...${col.reset}`);
@@ -343,6 +362,15 @@ function themeScripts(answers, projectName) {
       "tailwindcss -i ./src/tailwind-input.css -o ./assets/tailwind.css --minify --watch",
     check: "shopify theme check",
   };
+  if (answers.js !== "none") {
+    const entry =
+      answers.js === "alpine" ? "src/js/index.js" : "src/js/index.ts";
+    scripts["js:build"] = `esbuild ${entry} --bundle --outfile=assets/theme.js --minify`;
+    scripts["js:watch"] = `esbuild ${entry} --bundle --outfile=assets/theme.js --watch`;
+  }
+  if (answers.prettier) {
+    scripts["format"] = "prettier --write .";
+  }
   return scripts;
 }
 
@@ -365,6 +393,159 @@ async function appendThemeStylesheet(targetDir) {
       theme.replace(marker, marker + tailwindTag)
     );
   }
+}
+
+async function setupJsLayer(targetDir, answers, projectName) {
+  const jsDir = path.join(targetDir, "src", "js");
+  await fs.mkdir(jsDir, { recursive: true });
+  const isTs = answers.js === "vanilla-ts";
+  const entry = path.join(jsDir, isTs ? "index.ts" : "index.js");
+  if (answers.js === "alpine") {
+    await fs.writeFile(
+      entry,
+      `import Alpine from "alpinejs";
+
+window.Alpine = Alpine;
+Alpine.start();
+`
+    );
+  } else {
+    await fs.writeFile(
+      entry,
+      `// ${projectName} theme entrypoint — add your vanilla TypeScript here.
+`
+    );
+  }
+  // Wire the built asset into theme.liquid
+  const themePath = path.join(targetDir, "layout", "theme.liquid");
+  const theme = await fs.readFile(themePath, "utf-8");
+  if (!theme.includes("theme.js")) {
+    await fs.writeFile(
+      themePath,
+      theme.replace(
+        "</body>",
+        `    {{ 'theme.js' | asset_url | script_tag }}\n  </body>`
+      )
+    );
+  }
+  if (isTs) {
+    await fs.writeFile(
+      path.join(targetDir, "tsconfig.json"),
+      JSON.stringify(
+        {
+          compilerOptions: {
+            target: "ES2022",
+            module: "ESNext",
+            moduleResolution: "Bundler",
+            strict: true,
+            skipLibCheck: true,
+            types: [],
+          },
+          include: ["src/js"],
+        },
+        null,
+        2
+      ) + "\n"
+    );
+  }
+}
+
+async function setupPrettier(targetDir) {
+  await fs.writeFile(
+    path.join(targetDir, ".prettierrc"),
+    JSON.stringify(
+      {
+        plugins: ["@shopify/prettier-plugin-liquid"],
+        overrides: [
+          {
+            files: "*.liquid",
+            options: {
+              parser: "liquid-html",
+              singleQuote: true,
+              tabWidth: 2,
+            },
+          },
+        ],
+      },
+      null,
+      2
+    ) + "\n"
+  );
+  await fs.writeFile(
+    path.join(targetDir, ".prettierignore"),
+    `node_modules/
+assets/*.css
+assets/*.js
+package-lock.json
+pnpm-lock.yaml
+`
+  );
+}
+
+async function setupVscode(targetDir) {
+  const vscodeDir = path.join(targetDir, ".vscode");
+  await fs.mkdir(vscodeDir, { recursive: true });
+  await fs.writeFile(
+    path.join(vscodeDir, "extensions.json"),
+    JSON.stringify(
+      {
+        recommendations: [
+          "shopify.theme-check-vscode",
+          "esbenp.prettier-vscode",
+          "bradlc.vscode-tailwindcss",
+        ],
+      },
+      null,
+      2
+    ) + "\n"
+  );
+  await fs.writeFile(
+    path.join(vscodeDir, "settings.json"),
+    JSON.stringify(
+      {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[liquid]": {
+          "editor.defaultFormatter": "shopify.theme-check-vscode",
+        },
+        "tailwindCSS.experimental.classRegex": [
+          "class=\"([^\"]*)\"",
+          "class: '([^']*)'",
+        ],
+      },
+      null,
+      2
+    ) + "\n"
+  );
+}
+
+async function setupCi(targetDir, answers) {
+  const ghDir = path.join(targetDir, ".github", "workflows");
+  await fs.mkdir(ghDir, { recursive: true });
+  const failLevel = answers.check === "strict" ? "error" : "warning";
+  await fs.writeFile(
+    path.join(ghDir, "theme-check.yml"),
+    `name: Theme Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  theme-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Shopify CLI
+        run: npm install -g @shopify/cli
+      - name: Theme check
+        run: shopify theme check --fail-level ${failLevel}
+`
+  );
 }
 
 async function writeRootFiles(targetDir, answers, projectName) {
@@ -398,7 +579,10 @@ bun.lockb
 pnpm-workspace.yaml
 `;
 
-  const themeCheck = "extends: theme-check:recommended\n";
+  const themeCheck =
+    answers.check === "strict"
+      ? "extends: theme-check:all\n"
+      : "extends: theme-check:recommended\n";
 
   const editorconfig = `root = true
 
@@ -429,18 +613,30 @@ indent_size = 2
 async function writePackageJson(targetDir, answers, projectName) {
   // npm package names can't be paths — use the last path segment
   const pkgName = path.basename(projectName);
+  const devDeps = {};
+  if (answers.tailwind) {
+    devDeps["@tailwindcss/cli"] = "^4.3.0";
+    devDeps["tailwindcss"] = "^4.3.0";
+  }
+  if (answers.js === "alpine") {
+    devDeps["esbuild"] = "^0.25.0";
+    devDeps["alpinejs"] = "^3.14.0";
+  }
+  if (answers.js === "vanilla-ts") {
+    devDeps["esbuild"] = "^0.25.0";
+    devDeps["typescript"] = "^5.7.0";
+  }
+  if (answers.prettier) {
+    devDeps["prettier"] = "^3.5.0";
+    devDeps["@shopify/prettier-plugin-liquid"] = "^1.11.0";
+  }
   const pkg = {
     name: pkgName,
     version: "0.1.0",
     private: true,
     description: `Shopify Liquid theme scaffolded with create-kite`,
     scripts: themeScripts(answers, projectName),
-    devDependencies: answers.tailwind
-      ? {
-          "@tailwindcss/cli": "^4.3.0",
-          tailwindcss: "^4.3.0",
-        }
-      : {},
+    devDependencies: devDeps,
   };
   await fs.writeFile(
     path.join(targetDir, "package.json"),
@@ -507,6 +703,11 @@ function parseFlags(args) {
     tailwind: undefined,
     preflight: false,
     components: undefined,
+    js: undefined,
+    prettier: undefined,
+    check: undefined,
+    vscode: undefined,
+    ci: undefined,
     template: undefined,
     pm: undefined,
     store: undefined,
@@ -521,8 +722,15 @@ function parseFlags(args) {
     else if (a === "--preflight") flags.preflight = true;
     else if (a === "--components") flags.components = true;
     else if (a === "--no-components") flags.components = false;
+    else if (a === "--prettier") flags.prettier = true;
+    else if (a === "--no-prettier") flags.prettier = false;
+    else if (a === "--vscode") flags.vscode = true;
+    else if (a === "--no-vscode") flags.vscode = false;
     else if (a === "--no-git") flags.git = false;
     else if (a === "--no-install") flags.install = false;
+    else if (a === "--js") flags.js = args[++i];
+    else if (a === "--check") flags.check = args[++i];
+    else if (a === "--ci") flags.ci = args[++i];
     else if (a === "--template") flags.template = args[++i];
     else if (a === "--pm") flags.pm = args[++i];
     else if (a === "--store") flags.store = args[++i];
