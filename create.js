@@ -171,6 +171,28 @@ for (let i = 2; i < process.argv.length; i++) {
       );
     }
 
+    if (answers.js !== "none" && answers.install) {
+      console.log(`${col.cyan}📦 Building JavaScript (esbuild)...${col.reset}`);
+      const bin = path.join(targetDir, "node_modules", ".bin", "esbuild");
+      const entry =
+        answers.js === "alpine" ? "src/js/index.js" : "src/js/index.ts";
+      try {
+        execSync(
+          `"${bin}" ${entry} --bundle --outfile=assets/theme.js --minify`,
+          { cwd: targetDir, stdio: "inherit" }
+        );
+      } catch (e) {
+        console.log(
+          `${col.yellow}⚠️ JS build failed — run "${answers.pm} run js:build" after install.${col.reset}`
+        );
+      }
+    } else if (answers.js !== "none" && !answers.install) {
+      console.log(
+        `${col.yellow}⚠️ Skipping JS build (--no-install). Run "pnpm install && pnpm run js:build" when ready.${col.reset}`
+      );
+    }
+    if (answers.js !== "none") await wireThemeJs(targetDir, answers);
+
     if (answers.git) {
       console.log(`${col.cyan}🌱 Initializing git...${col.reset}`);
       try {
@@ -474,18 +496,6 @@ Alpine.start();
 `
     );
   }
-  // Wire the built asset into theme.liquid
-  const themePath = path.join(targetDir, "layout", "theme.liquid");
-  const theme = await fs.readFile(themePath, "utf-8");
-  if (!theme.includes("theme.js")) {
-    await fs.writeFile(
-      themePath,
-      theme.replace(
-        "</body>",
-        `    {{ 'theme.js' | asset_url | script_tag }}\n  </body>`
-      )
-    );
-  }
   if (isTs) {
     await fs.writeFile(
       path.join(targetDir, "tsconfig.json"),
@@ -506,6 +516,30 @@ Alpine.start();
       ) + "\n"
     );
   }
+}
+
+async function wireThemeJs(targetDir, answers) {
+  // Only reference the built asset if it actually exists, so a scaffold with
+  // --no-install (or a failed build) never 404s on assets/theme.js.
+  const themePath = path.join(targetDir, "layout", "theme.liquid");
+  const theme = await fs.readFile(themePath, "utf-8");
+  if (theme.includes("theme.js")) return;
+  const builtAsset = path.join(targetDir, "assets", "theme.js");
+  try {
+    await fs.access(builtAsset);
+  } catch {
+    console.log(
+      `${col.yellow}⚠️ Skipping theme.js wiring (not built). Run "${answers.pm} run js:build" when ready.${col.reset}`
+    );
+    return;
+  }
+  await fs.writeFile(
+    themePath,
+    theme.replace(
+      "</body>",
+      `    {{ 'theme.js' | asset_url | script_tag }}\n  </body>`
+    )
+  );
 }
 
 async function setupPrettier(targetDir) {
