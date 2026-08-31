@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { promises as fs } from "fs";
+import { promises as fs, readFileSync } from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import readline from "readline";
@@ -21,6 +21,32 @@ const col = {
   blue: "\x1b[34m",
   cyan: "\x1b[36m",
 };
+
+// Prompts: use readline for interactive TTY sessions. When stdin is piped or
+// redirected (CI, tests), read all lines up front and serve them from a queue —
+// this avoids readline's flaky piped-stdin behaviour (stalls / use-after-close).
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+let pipedLines = null;
+function nextPipedLine() {
+  if (pipedLines === null) {
+    const source = readFileSync(0, "utf-8");
+    pipedLines = source.split(/\r?\n/);
+  }
+  return pipedLines.length ? pipedLines.shift() : "";
+}
+
+const isTTY = Boolean(process.stdin.isTTY);
+function ask(question) {
+  if (isTTY) {
+    return new Promise((resolve) => rl.question(question, resolve));
+  }
+  process.stdout.write(question);
+  return Promise.resolve(nextPipedLine());
+}
 
 let projectName = null;
 const flags = parseFlags(process.argv.slice(2));
@@ -235,25 +261,16 @@ for (let i = 2; i < process.argv.length; i++) {
 /* ---------- prompts (pure readline, like litpack) ---------- */
 
 function promptProjectName() {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    const ask = () => {
-      rl.question(`${col.green}📛 Project name: ${col.reset}`, (name) => {
-        name = name.trim();
-        if (name && /^[a-z0-9-]+$/i.test(name)) {
-          rl.close();
-          console.log(`${col.green}✔ Project name:${col.reset} ${name}`);
-          resolve(name);
-        } else {
-          console.log(`${col.yellow}⚠️ Use lowercase letters, numbers, and dashes.${col.reset}`);
-          ask();
-        }
-      });
-    };
-    ask();
+  return new Promise(async (resolve) => {
+    for (;;) {
+      const name = (await ask(`${col.green}📛 Project name: ${col.reset}`)).trim();
+      if (name && /^[a-z0-9-]+$/i.test(name)) {
+        console.log(`${col.green}✔ Project name:${col.reset} ${name}`);
+        resolve(name);
+        return;
+      }
+      console.log(`${col.yellow}⚠️ Use lowercase letters, numbers, and dashes.${col.reset}`);
+    }
   });
 }
 
@@ -279,88 +296,48 @@ function promptPackageManager() {
   return promptChoice("Package manager", ["pnpm", "npm", "bun", "yarn"]);
 }
 
-function promptConfirm(message, def) {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    const suffix = def ? " (Y/n)" : " (y/N)";
-    rl.question(`${col.green}❓ ${message}${suffix} ${col.reset}`, (answer) => {
-      const a = answer.trim().toLowerCase();
-      let result;
-      if (a === "y" || a === "yes") result = true;
-      else if (a === "n" || a === "no") result = false;
-      else result = def;
-      rl.close();
-      console.log(`${col.green}✔ ${message}:${col.reset} ${result ? "Yes" : "No"}`);
-      resolve(result);
-    });
-  });
+async function promptConfirm(message, def) {
+  const suffix = def ? " (Y/n)" : " (y/N)";
+  for (;;) {
+    const answer = (await ask(`${col.green}❓ ${message}${suffix} ${col.reset}`)).trim().toLowerCase();
+    let result;
+    if (answer === "y" || answer === "yes") result = true;
+    else if (answer === "n" || answer === "no") result = false;
+    else if (answer === "") result = def;
+    else {
+      console.log(`${col.yellow}⚠️ Please answer y or n.${col.reset}`);
+      continue;
+    }
+    console.log(`${col.green}✔ ${message}:${col.reset} ${result ? "Yes" : "No"}`);
+    return result;
+  }
 }
 
-function promptOptional(message) {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    rl.question(`${col.green}❓ ${message} ${col.reset}`, (answer) => {
-      rl.close();
-      const value = answer.trim();
-      if (value) console.log(`${col.green}✔ ${message}:${col.reset} ${value}`);
-      resolve(value);
-    });
-  });
+async function promptOptional(message) {
+  const value = (await ask(`${col.green}❓ ${message} ${col.reset}`)).trim();
+  if (value) console.log(`${col.green}✔ ${message}:${col.reset} ${value}`);
+  return value;
 }
 
-function promptChoice(title, choices) {
-  return new Promise((resolve) => {
-    let currentIndex = 0;
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    // Inline single-line select (create-next-app style): no screen clearing,
-    // the whole conversation stays visible and scrolls naturally.
-    const render = () => {
-      process.stdout.write(
-        `\r\x1b[2K${col.green}❓ ${title}:${col.reset} ${choices
-          .map((c, i) => (i === currentIndex ? col.cyan + "› " + c + " ‹" + col.reset : c))
-          .join("  ")}`
-      );
-    };
-
-    const finish = (choice) => {
-      process.stdout.write(`\r\x1b[2K${col.green}✔ ${title}:${col.reset} ${col.cyan}${choice}${col.reset}\n`);
-      rl.close();
-      if (process.stdin.isTTY) process.stdin.setRawMode(false);
-      resolve(choice);
-    };
-
-    readline.emitKeypressEvents(process.stdin);
-    if (process.stdin.isTTY) process.stdin.setRawMode(true);
-
-    process.stdin.on("keypress", (str, key) => {
-      if (key.name === "escape") {
-        process.stdout.write("\n");
-        rl.close();
-        process.exit(0);
-      }
-      if (key.name === "up") {
-        currentIndex = (currentIndex - 1 + choices.length) % choices.length;
-        render();
-      } else if (key.name === "down") {
-        currentIndex = (currentIndex + 1) % choices.length;
-        render();
-      } else if (key.name === "return" || key.name === "space") {
-        finish(choices[currentIndex]);
-      }
-    });
-
-    render();
-  });
+async function promptChoice(title, choices) {
+  // Numbered menu — simple and robust: no raw mode, no escape codes, works
+  // in any terminal (TTY, piped, CI). Type a number (or the option name).
+  for (;;) {
+    const list = choices.map((c, i) => `${i + 1}) ${c}`).join(", ");
+    const answer = (await ask(`${col.green}❓ ${title} (${list}) ${col.reset}`)).trim().toLowerCase();
+    const byNumber = parseInt(answer, 10);
+    if (!Number.isNaN(byNumber) && byNumber >= 1 && byNumber <= choices.length) {
+      const choice = choices[byNumber - 1];
+      console.log(`${col.green}✔ ${title}:${col.reset} ${col.cyan}${choice}${col.reset}`);
+      return choice;
+    }
+    const byName = choices.find((c) => c.toLowerCase() === answer);
+    if (byName) {
+      console.log(`${col.green}✔ ${title}:${col.reset} ${col.cyan}${byName}${col.reset}`);
+      return byName;
+    }
+    console.log(`${col.yellow}⚠️ Please enter a number 1-${choices.length} or one of: ${choices.join(", ")}.${col.reset}`);
+  }
 }
 
 /* ---------- file generation ---------- */
@@ -392,14 +369,20 @@ async function copyDir(src, dest) {
 }
 
 function themeScripts(answers, projectName) {
-  const dev =
+  const baseDev =
     answers.store !== ""
       ? `shopify theme dev --store ${answers.store}`
       : "shopify theme dev";
   const storeFlag =
     answers.store !== "" ? ` --store ${answers.store}` : "";
   const scripts = {
-    dev,
+    // With Tailwind on, `dev` runs shopify theme dev + css:watch together
+    // (one terminal). `dev:only` is the plain shopify dev command.
+    dev:
+      answers.tailwind
+        ? `concurrently -k -n theme,css -c cyan,green "${baseDev}" "${answers.pm} run css:watch"`
+        : baseDev,
+    "dev:only": baseDev,
     "css:build":
       "tailwindcss -i ./src/tailwind-input.css -o ./assets/tailwind.css --minify",
     "css:watch":
@@ -769,6 +752,7 @@ async function writePackageJson(targetDir, answers, projectName) {
   if (answers.tailwind) {
     devDeps["@tailwindcss/cli"] = "^4.3.0";
     devDeps["tailwindcss"] = "^4.3.0";
+    devDeps["concurrently"] = "^9.1.0";
   }
   if (answers.js === "alpine") {
     devDeps["esbuild"] = "^0.25.0";
@@ -809,8 +793,8 @@ Shopify Liquid theme scaffolded with **create-kite**.
 
 \`\`\`bash
 cd ${projectName}
-pnpm install${answers.tailwind ? "\npnpm css:build" : ""}
-pnpm dev
+pnpm install
+pnpm dev${answers.tailwind ? "   # runs shopify theme dev + Tailwind watch together" : ""}
 \`\`\`
 
 ${answers.store ? `Store: \`${answers.store}\`` : "Run \`shopify theme dev --store YOUR-STORE.myshopify.com\`"}
@@ -819,8 +803,8 @@ ${answers.store ? `Store: \`${answers.store}\`` : "Run \`shopify theme dev --sto
 
 | Script | Purpose |
 |--------|---------|
-| \`dev\` | \`shopify theme dev\`${answers.store ? ` (\`${answers.store}\`)` : ""} |
-${answers.tailwind ? "| `css:build` | Build Tailwind CSS to assets/tailwind.css |\n| `css:watch` | Rebuild Tailwind on file change |\n" : ""}| \`check\` | Run theme-check |
+| \`dev\` | \`shopify theme dev\`${answers.tailwind ? " + Tailwind watch (one terminal)" : ""}${answers.store ? ` (\`${answers.store}\`)` : ""} |
+${answers.tailwind ? "| `dev:only` | Plain `shopify theme dev` without the Tailwind watcher |\n| `css:build` | Build Tailwind CSS to assets/tailwind.css |\n| `css:watch` | Rebuild Tailwind on file change |\n" : ""}| \`check\` | Run theme-check |
 
 ## Stack
 
@@ -833,6 +817,7 @@ Scaffolded with [create-kite](https://github.com/mehrabix/create-kite).
 }
 
 function done(answers, targetDir) {
+  if (isTTY) rl.close();
   if (flags.json) {
     console.log(
       JSON.stringify(
@@ -865,14 +850,10 @@ function done(answers, targetDir) {
   console.log(`${col.blue}Next steps:${col.reset}`);
   console.log(`  cd ${path.basename(targetDir)}`);
   if (answers.install) {
-    console.log(`  ${answers.pm} run dev`);
+    console.log(`  ${answers.pm} run dev${answers.tailwind ? "   # shopify theme dev + Tailwind watch" : ""}`);
   } else {
     console.log(`  ${answers.pm} install`);
     console.log(`  ${answers.pm} run dev`);
-  }
-  if (answers.tailwind) {
-    console.log(`  # in another terminal:`);
-    console.log(`  ${answers.pm} run css:watch`);
   }
   if (answers.store) {
     console.log(`${col.green}🔗 Dev preview: shopify theme dev --store ${answers.store}${col.reset}`);
