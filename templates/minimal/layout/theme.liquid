@@ -20,9 +20,6 @@
     {% # Load and preload the critical CSS %}
     {{ 'critical.css' | asset_url | stylesheet_tag: preload: true }}
 
-    {% # Tailwind CSS (compiled, see npm run css:build) %}
-    {{ 'tailwind.css' | asset_url | stylesheet_tag }}
-
     {% # Social, title, etc. %}
     {% render 'meta-tags' %}
 

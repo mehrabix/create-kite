@@ -24,58 +24,6 @@ const col = {
 
 let projectName = null;
 const flags = parseFlags(process.argv.slice(2));
-const subcommand = process.argv[2];
-
-/* ---------- subcommands: add / list ---------- */
-
-if (subcommand === "list") {
-  const dir = path.join(TEMPLATES_DIR, "components", "snippets");
-  const files = await fs.readdir(dir);
-  console.log(
-    `${col.cyan}🧩 LiqKit components:${col.reset}`
-  );
-  for (const f of files.filter((f) => f.endsWith(".liquid")).sort()) {
-    console.log(`  ${f.replace("liqkit-", "").replace(".liquid", "")}`);
-  }
-  process.exit(0);
-}
-
-if (subcommand === "add") {
-  const name = process.argv[3];
-  if (!name) {
-    console.error(`${col.red}Usage: create-kite add <component>${col.reset}`);
-    process.exit(1);
-  }
-  const targetSnippets = path.join(process.cwd(), "snippets");
-  try {
-    await fs.access(targetSnippets);
-  } catch {
-    console.error(
-      `${col.red}No snippets/ folder found — run this inside a Shopify theme.${col.reset}`
-    );
-    process.exit(1);
-  }
-  const src = path.join(
-    TEMPLATES_DIR,
-    "components",
-    "snippets",
-    `liqkit-${name}.liquid`
-  );
-  try {
-    await fs.access(src);
-  } catch {
-    console.error(
-      `${col.red}Unknown component "${name}". Run "create-kite list" to see available components.${col.reset}`
-    );
-    process.exit(1);
-  }
-  await fs.copyFile(src, path.join(targetSnippets, `liqkit-${name}.liquid`));
-  console.log(
-    `${col.green}✅ Added liqkit-${name}.liquid to snippets/.${col.reset}`
-  );
-  console.log(`${col.blue}Render it with: ${col.reset}${col.cyan}{% render 'liqkit-${name}' ... %}${col.reset}`);
-  process.exit(0);
-}
 
 // First non-flag arg is the project name (flags may come before or after)
 for (let i = 2; i < process.argv.length; i++) {
@@ -104,7 +52,6 @@ for (let i = 2; i < process.argv.length; i++) {
         pm: detectPackageManager(),
         tailwind: true,
         preflight: false,
-        components: false,
         js: "none",
         prettier: false,
         check: "recommended",
@@ -121,7 +68,6 @@ for (let i = 2; i < process.argv.length; i++) {
         pm: await promptPackageManager(),
         tailwind: await promptConfirm("Include Tailwind CSS v4?", true),
         preflight: false,
-        components: await promptConfirm("Include LiqKit components?", false),
         js: await promptChoice("JavaScript layer", ["none", "alpine", "vanilla-ts"]),
         prettier: await promptConfirm("Add Prettier + Liquid plugin?", true),
         check: await promptChoice("theme-check preset", ["recommended", "strict"]),
@@ -133,10 +79,9 @@ for (let i = 2; i < process.argv.length; i++) {
         install: await promptConfirm("Install dependencies now?", true),
       };
 
-  // --tailwind/--no-tailwind, --preflight, --components/--no-components override prompts
+  // --tailwind/--no-tailwind, --preflight override prompts
   if (flags.tailwind !== undefined) answers.tailwind = flags.tailwind;
   if (flags.preflight) answers.preflight = true;
-  if (flags.components !== undefined) answers.components = flags.components;
   if (flags.js) answers.js = flags.js;
   if (flags.prettier !== undefined) answers.prettier = flags.prettier;
   if (flags.check) answers.check = flags.check;
@@ -157,7 +102,7 @@ for (let i = 2; i < process.argv.length; i++) {
   try {
     await fs.mkdir(targetDir, { recursive: true });
 
-    // minimal is the base; full/components layer on top of it
+    // minimal is the base; full layers on top of it
     console.log(`${col.cyan}⏳ Copying template "${answers.template}"...${col.reset}`);
     await copyDir(path.join(TEMPLATES_DIR, "minimal"), targetDir);
     if (answers.template !== "minimal") {
@@ -168,12 +113,6 @@ for (let i = 2; i < process.argv.length; i++) {
       console.log(`${col.cyan}⚡ Setting up Tailwind CSS v4...${col.reset}`);
       await writeTailwind(targetDir, answers);
       await appendThemeStylesheet(targetDir, answers);
-    }
-
-    if (answers.components) {
-      console.log(`${col.cyan}🧩 Installing LiqKit components...${col.reset}`);
-      await copyDir(path.join(TEMPLATES_DIR, "components"), targetDir);
-      await setupLiqKitJs(targetDir);
     }
 
     console.log(`${col.cyan}📝 Writing project files...${col.reset}`);
@@ -310,7 +249,7 @@ async function checkFolderExists(name) {
 }
 
 function promptTemplate() {
-  return promptChoice("Template", ["minimal", "full", "components"]);
+  return promptChoice("Template", ["minimal", "full"]);
 }
 
 function promptPackageManager() {
@@ -452,20 +391,52 @@ function themeScripts(answers, projectName) {
 }
 
 async function writeTailwind(targetDir, answers) {
-  // Single source of truth: the minimal template's tailwind-input.css
-  const templateInput = path.join(
-    TEMPLATES_DIR,
-    "minimal",
-    "src",
-    "tailwind-input.css"
-  );
-  let input = await fs.readFile(templateInput, "utf-8");
-  if (answers.preflight) {
-    input = input.replace(
-      '@import "tailwindcss/utilities.css" layer(utilities);',
-      '@import "tailwindcss/preflight.css" layer(base);\n@import "tailwindcss/utilities.css" layer(utilities);'
-    );
-  }
+  const preflightImport = answers.preflight
+    ? '@import "tailwindcss/preflight.css" layer(base);\n'
+    : "";
+  const input = `@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+${preflightImport}@import "tailwindcss/utilities.css" layer(utilities);
+
+/* shadcn/ui-style token mapping — maps Tailwind color utilities to the CSS
+   variables defined in snippets/css-variables.liquid, so classes like
+   bg-primary, text-muted-foreground recolor from the theme editor. */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+/* Scan Liquid files for utility classes */
+@source "../layout";
+@source "../sections";
+@source "../snippets";
+@source "../blocks";
+@source "../templates";
+`;
+  await fs.mkdir(path.join(targetDir, "src"), { recursive: true });
   await fs.writeFile(path.join(targetDir, "src", "tailwind-input.css"), input);
 }
 
@@ -478,22 +449,6 @@ async function appendThemeStylesheet(targetDir) {
     await fs.writeFile(
       themePath,
       theme.replace(marker, marker + tailwindTag)
-    );
-  }
-}
-
-async function setupLiqKitJs(targetDir) {
-  // Copy liqkit.js runtime into assets/ (already copied by the components template,
-  // but ensure it exists) and inject the script tag into theme.liquid.
-  const themePath = path.join(targetDir, "layout", "theme.liquid");
-  const theme = await fs.readFile(themePath, "utf-8");
-  if (!theme.includes("liqkit.js")) {
-    await fs.writeFile(
-      themePath,
-      theme.replace(
-        "</body>",
-        `    <script src="{{ 'liqkit.js' | asset_url }}" defer></script>\n  </body>`
-      )
     );
   }
 }
@@ -822,7 +777,7 @@ ${answers.tailwind ? "| `css:build` | Build Tailwind CSS to assets/tailwind.css 
 ## Stack
 
 - Shopify Liquid (Online Store 2.0)
-${answers.tailwind ? "- Tailwind CSS v4 (preflight " + (answers.preflight ? "on" : "off") + ")" : ""}${answers.components ? "\n- LiqKit components" : ""}
+${answers.tailwind ? "- Tailwind CSS v4 (preflight " + (answers.preflight ? "on" : "off") + ")" : ""}
 
 Scaffolded with [create-kite](https://github.com/mehrabix/create-kite).
 `;
@@ -841,7 +796,6 @@ function done(answers, targetDir) {
           packageManager: answers.pm,
           tailwind: answers.tailwind,
           preflight: answers.preflight,
-          components: answers.components,
           js: answers.js,
           prettier: answers.prettier,
           themeCheck: answers.check,
@@ -884,7 +838,6 @@ function parseFlags(args) {
     yes: false,
     tailwind: undefined,
     preflight: false,
-    components: undefined,
     js: undefined,
     prettier: undefined,
     check: undefined,
@@ -905,8 +858,6 @@ function parseFlags(args) {
     else if (a === "--tailwind") flags.tailwind = true;
     else if (a === "--no-tailwind") flags.tailwind = false;
     else if (a === "--preflight") flags.preflight = true;
-    else if (a === "--components") flags.components = true;
-    else if (a === "--no-components") flags.components = false;
     else if (a === "--prettier") flags.prettier = true;
     else if (a === "--no-prettier") flags.prettier = false;
     else if (a === "--vscode") flags.vscode = true;

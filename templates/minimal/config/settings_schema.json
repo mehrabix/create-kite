@@ -57,10 +57,6 @@
     "name": "t:general.colors",
     "settings": [
       {
-        "type": "header",
-        "content": "t:labels.base_surfaces"
-      },
-      {
         "type": "color",
         "id": "background_color",
         "default": "#FFFFFF",
@@ -69,98 +65,8 @@
       {
         "type": "color",
         "id": "foreground_color",
-        "default": "#0F0F0F",
+        "default": "#333333",
         "label": "t:labels.foreground"
-      },
-      {
-        "type": "color",
-        "id": "card_color",
-        "default": "#FFFFFF",
-        "label": "t:labels.card"
-      },
-      {
-        "type": "header",
-        "content": "t:labels.brand"
-      },
-      {
-        "type": "color",
-        "id": "primary_color",
-        "default": "#0F0F0F",
-        "label": "t:labels.primary"
-      },
-      {
-        "type": "color",
-        "id": "primary_foreground_color",
-        "default": "#FAFAFA",
-        "label": "t:labels.primary_foreground"
-      },
-      {
-        "type": "color",
-        "id": "secondary_color",
-        "default": "#F5F5F5",
-        "label": "t:labels.secondary"
-      },
-      {
-        "type": "color",
-        "id": "secondary_foreground_color",
-        "default": "#0F0F0F",
-        "label": "t:labels.secondary_foreground"
-      },
-      {
-        "type": "header",
-        "content": "t:labels.muted_accent"
-      },
-      {
-        "type": "color",
-        "id": "muted_color",
-        "default": "#F5F5F5",
-        "label": "t:labels.muted"
-      },
-      {
-        "type": "color",
-        "id": "muted_foreground_color",
-        "default": "#737373",
-        "label": "t:labels.muted_foreground"
-      },
-      {
-        "type": "color",
-        "id": "accent_color",
-        "default": "#F5F5F5",
-        "label": "t:labels.accent"
-      },
-      {
-        "type": "color",
-        "id": "accent_foreground_color",
-        "default": "#0F0F0F",
-        "label": "t:labels.accent_foreground"
-      },
-      {
-        "type": "header",
-        "content": "t:labels.feedback_borders"
-      },
-      {
-        "type": "color",
-        "id": "destructive_color",
-        "default": "#EF4444",
-        "label": "t:labels.destructive"
-      },
-      {
-        "type": "color",
-        "id": "border_color",
-        "default": "#E5E5E5",
-        "label": "t:labels.border"
-      },
-      {
-        "type": "color",
-        "id": "input_color",
-        "default": "#E5E5E5",
-        "label": "t:labels.input"
-      },
-      {
-        "type": "color",
-        "id": "ring_color",
-        "default": "#A3A3A3",
-        "label": "t:labels.ring"
       },
       {
         "type": "range",
