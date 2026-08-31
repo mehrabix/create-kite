@@ -245,6 +245,7 @@ function promptProjectName() {
         name = name.trim();
         if (name && /^[a-z0-9-]+$/i.test(name)) {
           rl.close();
+          console.log(`${col.green}✔ Project name:${col.reset} ${name}`);
           resolve(name);
         } else {
           console.log(`${col.yellow}⚠️ Use lowercase letters, numbers, and dashes.${col.reset}`);
@@ -286,11 +287,14 @@ function promptConfirm(message, def) {
     });
     const suffix = def ? " (Y/n)" : " (y/N)";
     rl.question(`${col.green}❓ ${message}${suffix} ${col.reset}`, (answer) => {
-      rl.close();
       const a = answer.trim().toLowerCase();
-      if (a === "y" || a === "yes") resolve(true);
-      else if (a === "n" || a === "no") resolve(false);
-      else resolve(def);
+      let result;
+      if (a === "y" || a === "yes") result = true;
+      else if (a === "n" || a === "no") result = false;
+      else result = def;
+      rl.close();
+      console.log(`${col.green}✔ ${message}:${col.reset} ${result ? "Yes" : "No"}`);
+      resolve(result);
     });
   });
 }
@@ -303,7 +307,9 @@ function promptOptional(message) {
     });
     rl.question(`${col.green}❓ ${message} ${col.reset}`, (answer) => {
       rl.close();
-      resolve(answer.trim());
+      const value = answer.trim();
+      if (value) console.log(`${col.green}✔ ${message}:${col.reset} ${value}`);
+      resolve(value);
     });
   });
 }
@@ -316,13 +322,21 @@ function promptChoice(title, choices) {
       output: process.stdout,
     });
 
-    const display = () => {
-      console.clear();
-      console.log(`${col.green}Please choose a ${title}:${col.reset}`);
-      choices.forEach((choice, i) => {
-        const isSelected = i === currentIndex ? "👉" : "   ";
-        console.log(`${isSelected} ${choice}`);
-      });
+    // Inline single-line select (create-next-app style): no screen clearing,
+    // the whole conversation stays visible and scrolls naturally.
+    const render = () => {
+      process.stdout.write(
+        `\r\x1b[2K${col.green}❓ ${title}:${col.reset} ${choices
+          .map((c, i) => (i === currentIndex ? col.cyan + "› " + c + " ‹" + col.reset : c))
+          .join("  ")}`
+      );
+    };
+
+    const finish = (choice) => {
+      process.stdout.write(`\r\x1b[2K${col.green}✔ ${title}:${col.reset} ${col.cyan}${choice}${col.reset}\n`);
+      rl.close();
+      if (process.stdin.isTTY) process.stdin.setRawMode(false);
+      resolve(choice);
     };
 
     readline.emitKeypressEvents(process.stdin);
@@ -330,22 +344,22 @@ function promptChoice(title, choices) {
 
     process.stdin.on("keypress", (str, key) => {
       if (key.name === "escape") {
+        process.stdout.write("\n");
         rl.close();
         process.exit(0);
       }
       if (key.name === "up") {
         currentIndex = (currentIndex - 1 + choices.length) % choices.length;
+        render();
       } else if (key.name === "down") {
         currentIndex = (currentIndex + 1) % choices.length;
+        render();
       } else if (key.name === "return" || key.name === "space") {
-        rl.close();
-        if (process.stdin.isTTY) process.stdin.setRawMode(false);
-        resolve(choices[currentIndex]);
+        finish(choices[currentIndex]);
       }
-      display();
     });
 
-    display();
+    render();
   });
 }
 
