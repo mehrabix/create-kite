@@ -1,6 +1,6 @@
 {
   "name": "create-kite",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scaffold a Shopify Liquid theme workspace in seconds — with optional Tailwind CSS v4 and a full toolchain.",
   "type": "module",
   "bin": {
