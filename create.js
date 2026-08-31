@@ -537,7 +537,7 @@ async function wireThemeJs(targetDir, answers) {
     themePath,
     theme.replace(
       "</body>",
-      `    {{ 'theme.js' | asset_url | script_tag }}\n  </body>`
+      `    <script src="{{ 'theme.js' | asset_url }}" defer></script>\n  </body>`
     )
   );
 }
