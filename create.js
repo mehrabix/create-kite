@@ -375,13 +375,29 @@ function themeScripts(answers, projectName) {
       : "shopify theme dev";
   const storeFlag =
     answers.store !== "" ? ` --store ${answers.store}` : "";
+
+  // Compose the `dev` command: shopify theme dev + css watch (if Tailwind) +
+  // js watch (if a JS layer) all in ONE terminal via concurrently.
+  const devCommands = [`"${baseDev}"`];
+  const devNames = ["theme"];
+  const devColors = ["cyan"];
+  if (answers.tailwind) {
+    devCommands.push(`"${answers.pm} run css:watch"`);
+    devNames.push("css");
+    devColors.push("green");
+  }
+  if (answers.js !== "none") {
+    devCommands.push(`"${answers.pm} run js:watch"`);
+    devNames.push("js");
+    devColors.push("magenta");
+  }
+  const dev =
+    devCommands.length > 1
+      ? `concurrently -k -n ${devNames.join(",")} -c ${devColors.join(",")} ${devCommands.join(" ")}`
+      : baseDev;
+
   const scripts = {
-    // With Tailwind on, `dev` runs shopify theme dev + css:watch together
-    // (one terminal). `dev:only` is the plain shopify dev command.
-    dev:
-      answers.tailwind
-        ? `concurrently -k -n theme,css -c cyan,green "${baseDev}" "${answers.pm} run css:watch"`
-        : baseDev,
+    dev,
     "dev:only": baseDev,
     "css:build":
       "tailwindcss -i ./src/tailwind-input.css -o ./assets/tailwind.css --minify",
@@ -803,8 +819,8 @@ ${answers.store ? `Store: \`${answers.store}\`` : "Run \`shopify theme dev --sto
 
 | Script | Purpose |
 |--------|---------|
-| \`dev\` | \`shopify theme dev\`${answers.tailwind ? " + Tailwind watch (one terminal)" : ""}${answers.store ? ` (\`${answers.store}\`)` : ""} |
-${answers.tailwind ? "| `dev:only` | Plain `shopify theme dev` without the Tailwind watcher |\n| `css:build` | Build Tailwind CSS to assets/tailwind.css |\n| `css:watch` | Rebuild Tailwind on file change |\n" : ""}| \`check\` | Run theme-check |
+| \`dev\` | \`shopify theme dev\`${answers.tailwind ? " + Tailwind watch" : ""}${answers.js !== "none" ? " + JS watch" : ""} (one terminal)${answers.store ? ` (\`${answers.store}\`)` : ""} |
+${answers.tailwind ? "| `dev:only` | Plain `shopify theme dev` without watchers |\n| `css:build` | Build Tailwind CSS to assets/tailwind.css |\n| `css:watch` | Rebuild Tailwind on file change |\n" : ""}${answers.js !== "none" ? "| `js:build` | Bundle JS to assets/theme.js |\n| `js:watch` | Rebuild JS on file change |\n" : ""}| \`check\` | Run theme-check |
 
 ## Stack
 
@@ -850,7 +866,7 @@ function done(answers, targetDir) {
   console.log(`${col.blue}Next steps:${col.reset}`);
   console.log(`  cd ${path.basename(targetDir)}`);
   if (answers.install) {
-    console.log(`  ${answers.pm} run dev${answers.tailwind ? "   # shopify theme dev + Tailwind watch" : ""}`);
+    console.log(`  ${answers.pm} run dev${answers.tailwind || answers.js !== "none" ? "   # shopify theme dev + watchers (one terminal)" : ""}`);
   } else {
     console.log(`  ${answers.pm} install`);
     console.log(`  ${answers.pm} run dev`);
