@@ -121,6 +121,15 @@ for (let i = 2; i < process.argv.length; i++) {
   if (flags.git !== undefined) answers.git = flags.git;
   if (flags.install !== undefined) answers.install = flags.install;
 
+  // Only the minimal template is bundled; normalize anything else so the
+  // CLI never crashes with a missing template directory.
+  if (answers.template !== "minimal") {
+    console.log(
+      `${col.yellow}⚠️ Template "${answers.template}" is not available yet — using "minimal".${col.reset}`
+    );
+    answers.template = "minimal";
+  }
+
   const targetDir = path.isAbsolute(projectName)
     ? projectName
     : path.join(process.cwd(), projectName);
@@ -128,7 +137,7 @@ for (let i = 2; i < process.argv.length; i++) {
   try {
     await fs.mkdir(targetDir, { recursive: true });
 
-    // minimal is the base; full layers on top of it
+    // Copy the minimal (Skeleton base) template
     console.log(`${col.cyan}⏳ Copying template "${answers.template}"...${col.reset}`);
     await copyDir(path.join(TEMPLATES_DIR, "minimal"), targetDir);
     if (answers.template !== "minimal") {
@@ -289,7 +298,7 @@ async function checkFolderExists(name) {
 }
 
 function promptTemplate() {
-  return promptChoice("Template", ["minimal", "full"]);
+  return promptChoice("Template", ["minimal"]);
 }
 
 function promptPackageManager() {
